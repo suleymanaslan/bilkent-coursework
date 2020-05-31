@@ -125,4 +125,4 @@ dmypy.json
 .pyre/
 
 computer_vision/dataset/
-computer_vision/output/
+computer_vision/output*/

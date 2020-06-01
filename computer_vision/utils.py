@@ -22,33 +22,31 @@ def normalize_descriptor(descriptor):
     return (descriptor - np.min(descriptor)) / (np.max(descriptor) - np.min(descriptor))
 
 
-def create_distance_matrix(des1, des2):
-    distance_matrix = np.zeros([des1.shape[0], des2.shape[0]])
-    for i in range(des1.shape[0]):
-        dist = np.linalg.norm(des2 - des1[i], axis=1)
+def create_distance_matrix(descriptor1, descriptor2):
+    distance_matrix = np.zeros([descriptor1.shape[0], descriptor2.shape[0]])
+    for i in range(descriptor1.shape[0]):
+        dist = np.linalg.norm(descriptor2 - descriptor1[i], axis=1)
         distance_matrix[i,:] = dist
     return distance_matrix
 
 
-def get_eligible_matches(distance_matrix, img1, kp1, des1, img2, kp2, des2, nndr_threshold):
-    D = np.copy(distance_matrix)
-    
-    min_key_points_val = np.min((des1.shape[0], des2.shape[0]))
+def get_eligible_matches(distance_matrix, descriptors, nndr_threshold):
+    min_key_points_val = np.min((descriptors[0].shape[0], descriptors[1].shape[0]))
     min_key_points_ind = 1
     
-    min_idx = D.argmin(axis=min_key_points_ind)
-    min_vals = D.min(axis=min_key_points_ind)
+    min_idx = distance_matrix.argmin(axis=min_key_points_ind)
+    min_vals = distance_matrix.min(axis=min_key_points_ind)
     if min_key_points_ind == 1:
-        D[np.arange(len(D)), min_idx] = np.inf
+        distance_matrix[np.arange(len(distance_matrix)), min_idx] = np.inf
     elif min_key_points_ind == 0:
-        D[min_idx, np.arange(des2.shape[0])] = np.inf
-    min_idx2 = D.argmin(axis=min_key_points_ind)
-    min_vals2 = D.min(axis=min_key_points_ind)
+        distance_matrix[min_idx, np.arange(descriptors[1].shape[0])] = np.inf
+    min_idx2 = distance_matrix.argmin(axis=min_key_points_ind)
+    min_vals2 = distance_matrix.min(axis=min_key_points_ind)
     
     min_distance = np.concatenate([np.expand_dims(min_vals, axis=0), np.expand_dims(min_vals2, axis=0)], axis=0)
     min_indices = np.concatenate([np.expand_dims(min_idx, axis=0), np.expand_dims(min_idx2, axis=0)], axis=0)
     
-    all_matches = [[] for i in range(len(min_idx))]
+    all_matches = [[] for _ in range(len(min_idx))]
     for i in range(len(min_vals)):
         for j in range(2):
             all_matches[i].append(cv2.DMatch(i, min_indices[j, i], min_distance[j, i]))
@@ -61,17 +59,17 @@ def get_eligible_matches(distance_matrix, img1, kp1, des1, img2, kp2, des2, nndr
     return eligible_matches
 
 
-def find_matches(img_list, keypoints, descriptors, use_nndr=True, nndr_threshold=0.35, number_of_matches=100):
+def find_matches(descriptors, use_nndr=True, nndr_threshold=0.35, number_of_matches=100):
     if use_nndr:
         distance_matrix = create_distance_matrix(descriptors[0], descriptors[1])
-        eligible_matches = get_eligible_matches(distance_matrix, img_list[0], keypoints[0], descriptors[0], img_list[1], keypoints[0], descriptors[1], nndr_threshold)
+        eligible_matches = get_eligible_matches(distance_matrix, descriptors, nndr_threshold)
         matched_points = [(eligible_matches[i].queryIdx, eligible_matches[i].trainIdx) for i in range(len(eligible_matches))]
         matches1to2 = [cv2.DMatch(i, i, 0) for i in range(len(eligible_matches))]
     
     else:
         pairwise_distances = create_distance_matrix(normalize_descriptor(descriptors[0]), normalize_descriptor(descriptors[1]))
         matched_points = []
-        for i in range(number_of_matches):
+        for _ in range(number_of_matches):
             min_index = np.argmin(pairwise_distances)
             first_point = min_index // pairwise_distances.shape[1]
             second_point = min_index % pairwise_distances.shape[1]
@@ -92,13 +90,12 @@ def find_homography(eligible_matches, kp1, kp2, step_size, residual_stopping_thr
     H[1, 1] = 1 + np.random.rand(1, 1)
     H[2, 2] = 1
     
-    E = eligible_matches.copy()
-    P0 = np.zeros([3, len(E)])
-    P1 = np.zeros([3, len(E)])
+    P0 = np.zeros([3, len(eligible_matches)])
+    P1 = np.zeros([3, len(eligible_matches)])
     
-    for i in range(len(E)):
-        p0 = kp1[E[i].queryIdx]
-        p1 = kp2[E[i].trainIdx]
+    for i in range(len(eligible_matches)):
+        p0 = kp1[eligible_matches[i].queryIdx]
+        p1 = kp2[eligible_matches[i].trainIdx]
         P0[:, i] = np.array([p0.pt[0], p0.pt[1], 1])
         P1[:, i] = np.array([p1.pt[0], p1.pt[1], 1])
     
@@ -106,7 +103,7 @@ def find_homography(eligible_matches, kp1, kp2, step_size, residual_stopping_thr
     P1_ravel = P1.transpose()[:, :2].ravel()
     
     if init_translation:
-        arrays = [np.identity(2) for _ in range(len(E))]
+        arrays = [np.identity(2) for _ in range(len(eligible_matches))]
         J = np.concatenate((arrays), axis=0)
         p_star = np.matmul(np.matmul(np.linalg.inv(np.matmul(J.transpose(), J)), J.transpose()), P1_ravel - P0_ravel)
         H[0, 2] = p_star[0]
@@ -122,8 +119,8 @@ def find_homography(eligible_matches, kp1, kp2, step_size, residual_stopping_thr
         if np.abs(np.sum(res)) < residual_stopping_threshold:
             break
         
-        J = np.zeros([2 * len(E), 9])
-        for i in range(len(E)):
+        J = np.zeros([2 * len(eligible_matches), 9])
+        for i in range(len(eligible_matches)):
             J_i = np.zeros([2, 9])
             J_i[0, 0] = P1[0, i] / HP[2, i]
             J_i[0, 1] = P1[1, i] / HP[2, i]
@@ -163,8 +160,7 @@ def perspective_transform(img_list, homography):
     height1, width1 = img_list[0].shape[:2]
     height2, width2 = img_list[1].shape[:2]
     pts = np.concatenate((np.float32([[0, 0], [0, height1], [width1, height1], [width1, 0]]).reshape(-1, 1, 2), 
-                          cv2.perspectiveTransform(np.float32([[0, 0], [0, height2], [width2, height2], [width2, 0]]).reshape(-1, 1, 2), homography)), 
-                         axis=0)
+                          cv2.perspectiveTransform(np.float32([[0, 0], [0, height2], [width2, height2], [width2, 0]]).reshape(-1, 1, 2), homography)), axis=0)
     [xmin, ymin] = np.int32(np.min(pts, axis=0).squeeze() - 0.5)
     [xmax, ymax] = np.int32(np.max(pts, axis=0).squeeze() + 0.5)
     t = [-xmin, -ymin]
@@ -202,9 +198,9 @@ def alpha_blending(stitch_r, stitch_l):
 
 
 def clip_image(result, t):
-    image_clipped = result[t[1]:,:]
-    rows, cols = np.where(image_clipped[:, :, 0] != 0)
+    clipped_img = result[t[1]:,:]
+    rows, cols = np.where(clipped_img[:, :, 0] != 0)
     min_row, max_row = min(rows), max(rows) + 1
     min_col, max_col = min(cols), max(cols) + 1
-    image_clipped = image_clipped[min_row:max_row, min_col:max_col, :]
-    return image_clipped
+    clipped_img = clipped_img[min_row:max_row, min_col:max_col, :]
+    return clipped_img

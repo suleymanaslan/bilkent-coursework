@@ -124,5 +124,9 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+.tmp.drivedownload
+
 computer_vision/dataset/
 computer_vision/output*/
+
+course_files/

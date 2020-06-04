@@ -128,5 +128,7 @@ dmypy.json
 
 computer_vision/dataset/
 computer_vision/output*/
+biometrics/data/
+biometrics/output/
 
 course_files/

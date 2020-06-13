@@ -48,23 +48,21 @@ def plot_tla_random_weight_losses(two_layer_ann, input_dim, output_dim, nb_of_hi
     plt.show()
 
 
-def train_lra(linear_regressor_ann, train1_x, train1_y, input_dim, output_dim, train1_nb_examples, train1_uniform_x_samples):
-    learning_rate = 6e-2
-    nb_of_epochs = 20
-    batch_size = 30
+def train_lra(hyperparams, linear_regressor_ann, train_x, train_y, input_dim, output_dim, train_nb_examples, train_uniform_x_samples, label="train"):
+    learning_rate, nb_of_epochs, batch_size = hyperparams
     fig = plt.figure()
     min_lra_loss = np.inf
     for epoch in range(nb_of_epochs):
-        for i in range(train1_nb_examples//batch_size):
-            linear_regressor_ann.forward(train1_x[i*batch_size:i*batch_size+batch_size].reshape((batch_size, input_dim, output_dim)))
-            linear_regressor_ann.loss(train1_y[i*batch_size:i*batch_size+batch_size])
+        for i in range(train_nb_examples//batch_size):
+            linear_regressor_ann.forward(train_x[i*batch_size:i*batch_size+batch_size].reshape((batch_size, input_dim, output_dim)))
+            linear_regressor_ann.loss(train_y[i*batch_size:i*batch_size+batch_size])
             linear_regressor_ann.backward(learning_rate)
-        lra_output = linear_regressor_ann.forward(train1_x.reshape((train1_nb_examples, input_dim, output_dim)))
-        lra_loss = np.mean(linear_regressor_ann.loss(train1_y))
+        lra_output = linear_regressor_ann.forward(train_x.reshape((train_nb_examples, input_dim, output_dim)))
+        lra_loss = np.mean(linear_regressor_ann.loss(train_y))
         print(f"Epoch:{epoch+1}, Linear regressor ANN loss:{lra_loss:.4f}")
-        plt.scatter(train1_x, train1_y)
-        lra_output = linear_regressor_ann.forward(train1_uniform_x_samples.reshape((train1_nb_examples, input_dim, output_dim)))
-        plt.plot(train1_uniform_x_samples, lra_output.reshape((train1_nb_examples, 1)), linewidth=3)
+        plt.scatter(train_x, train_y)
+        lra_output = linear_regressor_ann.forward(train_uniform_x_samples.reshape((train_nb_examples, input_dim, output_dim)))
+        plt.plot(train_uniform_x_samples, lra_output.reshape((train_nb_examples, 1)), linewidth=3)
         plt.title(f'Linear regressor ANN, Epoch:{epoch+1}, Training Set, Loss:{lra_loss:.4f}')
         plt.xlabel('x')
         plt.ylabel('y')
@@ -74,13 +72,13 @@ def train_lra(linear_regressor_ann, train1_x, train1_y, input_dim, output_dim, t
             min_lra_loss = lra_loss
         else:
             print("Stopped training")
-            plt.scatter(train1_x, train1_y)
-            lra_output = linear_regressor_ann.forward(train1_uniform_x_samples.reshape((train1_nb_examples, input_dim, output_dim)))
-            plt.plot(train1_uniform_x_samples, lra_output.reshape((train1_nb_examples, 1)), linewidth=3)
+            plt.scatter(train_x, train_y)
+            lra_output = linear_regressor_ann.forward(train_uniform_x_samples.reshape((train_nb_examples, input_dim, output_dim)))
+            plt.plot(train_uniform_x_samples, lra_output.reshape((train_nb_examples, 1)), linewidth=3)
             plt.title(f'Linear regressor ANN, Epoch:{epoch+1}, Training Set, Loss:{lra_loss:.4f}')
             plt.xlabel('x')
             plt.ylabel('y')
-            plt.savefig('output/lra_train.png')
+            plt.savefig(f'output/lra_{label}.png')
             plt.close()
             break
 
@@ -102,7 +100,7 @@ def plot_lra_evaluation(linear_regressor_ann, x, input_dim, output_dim, y, mode_
     plt.title(f'Linear regressor ANN, {mode_str} Set, Loss:{np.mean(lra_loss):.4f}')
     plt.xlabel('x')
     plt.ylabel('y')
-    plt.savefig(f'output/lra_{label}_curve.png')
+    plt.savefig(f'output/lra_{label}.png')
     plt.show()
 
 

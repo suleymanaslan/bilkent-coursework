@@ -104,7 +104,7 @@ def plot_output(x, y, uniform_x, output, title):
     plt.show()
 
 
-def create_animation(anim_file, png_files):
+def create_animation(anim_file, png_files, fps=8):
     frames = []
     filenames = glob.glob(png_files)
     filenames = sorted(filenames)
@@ -114,4 +114,4 @@ def create_animation(anim_file, png_files):
         frames.append(imageio.imread(filename))
     for f in filenames:
         os.remove(f)
-    imageio.mimsave(anim_file, frames, 'GIF', fps=8)
+    imageio.mimsave(anim_file, frames, 'GIF', fps=fps)

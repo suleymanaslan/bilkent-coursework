@@ -256,3 +256,165 @@ def plot_tla_curves(trained_nets, train_x, train_y, train_uniform_x_samples, tra
     plt.ylabel('y')
     plt.savefig(f'output/tla_all_curves{label}.png')
     plt.show()
+
+
+def train_tla_different_lrs(train2_x, train2_y, train2_nb_examples, train2_uniform_x_samples, input_dim, output_dim):
+    nb_of_hiddenunits = 8
+    lr = {0: 1, 1: 1e-1, 2: 1e-2, 3: 1e-3, 4: 1e-4}
+    nb_epoch = {0: 1, 1: 500, 2: 2500, 3: 25000, 4: 225000}
+    batch_size = 229
+    activation = "sigmoid"
+    loss = "mse"
+    momentum = 0.99
+    stop_loss = 0.12
+    plot_color = "magenta"
+    
+    for j in lr:
+        np.random.seed(550)
+        learning_rate = lr[j]
+        nb_of_epochs = nb_epoch[j]
+        
+        two_layer_ann = neural_net.TwoLayerANN(nb_of_hiddenunits, 
+                                               activation_function=activation, 
+                                               loss_function=loss, 
+                                               use_momentum=True, momentum_factor=momentum)
+        
+        fig = plt.figure()
+        fig.set_facecolor('w')
+        print(f"Training two layer ANN with {nb_of_hiddenunits} units, LR:{learning_rate}")
+        for epoch in range(nb_of_epochs):
+            for i in range(train2_nb_examples//batch_size):
+                two_layer_ann.forward(train2_x[i*batch_size:i*batch_size+batch_size].reshape((batch_size, input_dim, output_dim)))
+                two_layer_ann.loss(train2_y[i*batch_size:i*batch_size+batch_size])
+                two_layer_ann.backward(learning_rate)
+            tla_output = two_layer_ann.forward(train2_x.reshape((train2_nb_examples, input_dim, output_dim)))
+            tla_loss = np.mean(two_layer_ann.loss(train2_y))
+            if epoch == 0 or (epoch+1) % (1 if j == 0 else (500 if j < 3 else (10000 if j == 3 else 30000))) == 0:
+                print(f"Epoch:{epoch+1}, Two layer ANN loss:{tla_loss:.4f}")
+            if tla_loss < stop_loss:
+                print(f"Stopped training, Epoch:{epoch+1}, Two layer ANN loss:{tla_loss:.4f}")
+                plt.scatter(train2_x, train2_y)
+                tla_output = two_layer_ann.forward(train2_uniform_x_samples.reshape((train2_nb_examples, input_dim, output_dim)))
+                plt.plot(train2_uniform_x_samples, tla_output.reshape((train2_nb_examples, 1)), plot_color,
+                         linewidth=3)
+                plt.title(f'Two layer ANN ({nb_of_hiddenunits} units), Epoch:{epoch+1}, Training Set, Loss:{tla_loss:.4f}')
+                plt.xlabel('x')
+                plt.ylabel('y')
+                plt.savefig(f'output/tla_{nb_of_hiddenunits}_train_d{j}.png')
+                plt.show()
+                break
+            if epoch == nb_of_epochs - 1:
+                print(f"Epoch:{epoch+1}, Two layer ANN loss:{tla_loss:.4f}")
+                plt.scatter(train2_x, train2_y)
+                tla_output = two_layer_ann.forward(train2_uniform_x_samples.reshape((train2_nb_examples, input_dim, output_dim)))
+                plt.plot(train2_uniform_x_samples, tla_output.reshape((train2_nb_examples, 1)), plot_color, 
+                         linewidth=3)
+                plt.title(f'Two layer ANN ({nb_of_hiddenunits} units), Epoch:{epoch+1}, Training Set, Loss:{tla_loss:.4f}')
+                plt.xlabel('x')
+                plt.ylabel('y')
+                plt.savefig(f'output/tla_{nb_of_hiddenunits}_train_d{j}.png')
+                plt.show()
+
+
+def train_tla_momentum(train2_x, train2_y, train2_nb_examples, train2_uniform_x_samples, input_dim, output_dim):
+    nb_of_hiddenunits = 8
+    learning_rate = 1e-2
+    nb_of_epochs = 300000
+    batch_size = 229
+    activation = "sigmoid"
+    loss = "mse"
+    mf = {0: 0, 1: 0.99}
+    stop_loss = 0.12
+    plot_color = "magenta"
+    
+    for j in mf:
+        np.random.seed(550)
+        momentum = mf[j]
+        two_layer_ann = neural_net.TwoLayerANN(nb_of_hiddenunits, 
+                                               activation_function=activation, 
+                                               loss_function=loss, 
+                                               use_momentum=True, momentum_factor=momentum)
+        
+        fig = plt.figure()
+        fig.set_facecolor('w')
+        print(f"Training two layer ANN with {nb_of_hiddenunits} units, MF:{momentum}")
+        for epoch in range(nb_of_epochs):
+            for i in range(train2_nb_examples//batch_size):
+                two_layer_ann.forward(train2_x[i*batch_size:i*batch_size+batch_size].reshape((batch_size, input_dim, output_dim)))
+                two_layer_ann.loss(train2_y[i*batch_size:i*batch_size+batch_size])
+                two_layer_ann.backward(learning_rate)
+            tla_output = two_layer_ann.forward(train2_x.reshape((train2_nb_examples, input_dim, output_dim)))
+            tla_loss = np.mean(two_layer_ann.loss(train2_y))
+            if epoch == 0 or (epoch+1) % (40000 if j == 0 else 500) == 0:
+                print(f"Epoch:{epoch+1}, Two layer ANN loss:{tla_loss:.4f}")
+            if tla_loss < stop_loss:
+                print(f"Stopped training, Epoch:{epoch+1}, Two layer ANN loss:{tla_loss:.4f}")
+                plt.scatter(train2_x, train2_y)
+                tla_output = two_layer_ann.forward(train2_uniform_x_samples.reshape((train2_nb_examples, input_dim, output_dim)))
+                plt.plot(train2_uniform_x_samples, tla_output.reshape((train2_nb_examples, 1)), plot_color,
+                         linewidth=3)
+                plt.title(f'Two layer ANN ({nb_of_hiddenunits} units), Epoch:{epoch+1}, Training Set, Loss:{tla_loss:.4f}')
+                plt.xlabel('x')
+                plt.ylabel('y')
+                plt.savefig(f'output/tla_{nb_of_hiddenunits}_train_e{j}.png')
+                plt.show()
+                break
+
+
+def train_tla_batch(train2_x, train2_y, train2_nb_examples, train2_uniform_x_samples, input_dim, output_dim):
+    nb_of_hiddenunits = 8
+    learning_rates = {0: 8e-3, 1: 1.5e-2}
+    nb_of_epochs_config = {0: 3500, 1: 110000} 
+    batch_sizes = {0: 1, 1: 229}
+    activation = "sigmoid"
+    loss = "mse"
+    mf = {0: 0.1, 1: 0.2}
+    stop_loss = 0.125
+    plot_color = "magenta"
+
+    for j in batch_sizes:
+        np.random.seed(550)
+        learning_rate = learning_rates[j]
+        batch_size = batch_sizes[j]
+        momentum = mf[j]
+        nb_of_epochs = nb_of_epochs_config[j]
+        two_layer_ann = neural_net.TwoLayerANN(nb_of_hiddenunits, 
+                                               activation_function=activation, 
+                                               loss_function=loss, 
+                                               use_momentum=True, momentum_factor=momentum)
+
+        fig = plt.figure()
+        fig.set_facecolor('w')
+        print(f"Training two layer ANN with {nb_of_hiddenunits} units, BS:{batch_size}")
+        for epoch in range(nb_of_epochs):
+            for i in range(train2_nb_examples//batch_size):
+                two_layer_ann.forward(train2_x[i*batch_size:i*batch_size+batch_size].reshape((batch_size, input_dim, output_dim)))
+                two_layer_ann.loss(train2_y[i*batch_size:i*batch_size+batch_size])
+                two_layer_ann.backward(learning_rate)
+            tla_output = two_layer_ann.forward(train2_x.reshape((train2_nb_examples, input_dim, output_dim)))
+            tla_loss = np.mean(two_layer_ann.loss(train2_y))
+            if epoch == 0 or (epoch+1) % (500 if j == 0 else 20000) == 0:
+                print(f"Epoch:{epoch+1}, Two layer ANN loss:{tla_loss:.4f}")
+            if tla_loss < stop_loss:
+                print(f"Stopped training, Epoch:{epoch+1}, Two layer ANN loss:{tla_loss:.4f}")
+                plt.scatter(train2_x, train2_y)
+                tla_output = two_layer_ann.forward(train2_uniform_x_samples.reshape((train2_nb_examples, input_dim, output_dim)))
+                plt.plot(train2_uniform_x_samples, tla_output.reshape((train2_nb_examples, 1)), plot_color,
+                         linewidth=3)
+                plt.title(f'Two layer ANN ({nb_of_hiddenunits} units), Epoch:{epoch+1}, Training Set, Loss:{tla_loss:.4f}')
+                plt.xlabel('x')
+                plt.ylabel('y')
+                plt.savefig(f'output/tla_{nb_of_hiddenunits}_train_f{j}.png')
+                plt.show()
+                break
+            if epoch == nb_of_epochs - 1:
+                print(f"Epoch:{epoch+1}, Two layer ANN loss:{tla_loss:.4f}")
+                plt.scatter(train2_x, train2_y)
+                tla_output = two_layer_ann.forward(train2_uniform_x_samples.reshape((train2_nb_examples, input_dim, output_dim)))
+                plt.plot(train2_uniform_x_samples, tla_output.reshape((train2_nb_examples, 1)), plot_color, 
+                         linewidth=3)
+                plt.title(f'Two layer ANN ({nb_of_hiddenunits} units), Epoch:{epoch+1}, Training Set, Loss:{tla_loss:.4f}')
+                plt.xlabel('x')
+                plt.ylabel('y')
+                plt.savefig(f'output/tla_{nb_of_hiddenunits}_train_f{j}.png')
+                plt.show()

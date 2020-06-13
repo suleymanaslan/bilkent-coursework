@@ -130,5 +130,8 @@ computer_vision/dataset/
 computer_vision/output*/
 biometrics/data/
 biometrics/output/
+machine_learning/data/
+machine_learning/output/
+machine_learning/gif/
 
 course_files/

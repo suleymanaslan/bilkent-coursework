@@ -104,15 +104,25 @@ def plot_lra_evaluation(linear_regressor_ann, x, input_dim, output_dim, y, mode_
     plt.show()
 
 
-def train_tla(train1_x, train1_y, input_dim, output_dim, train1_nb_examples, train1_uniform_x_samples):
-    lr_config = {2: 8e-3, 4: 1e-2, 8: 1e-2, 16: 5e-3}
-    epoch_config = {2: 5500, 4: 8000, 8: 7500, 16: 9000}
-    batchsize_config = {2: 2, 4: 2, 8: 2, 16: 3}
-    activation_config = {2: "sigmoid", 4: "sigmoid", 8: "sigmoid", 16: "sigmoid"}
-    loss_config = {2: "mse", 4: "mse", 8: "mse", 16: "mse"}
-    momentum_config = {2: 0.75, 4: 0.75, 8: 0.9, 16: 0.6}
-    stop_loss_config = {2: 0.05795, 4: 0.02025, 8: 0.02045, 16: 0.02065}
-    plot_color = {2: "red", 4: "cyan", 8: "magenta", 16: "black"}
+def train_tla(data_ix, train_x, train_y, input_dim, output_dim, train_nb_examples, train_uniform_x_samples):
+    if data_ix == 1:
+        lr_config = {2: 8e-3, 4: 1e-2, 8: 1e-2, 16: 5e-3}
+        epoch_config = {2: 5500, 4: 8000, 8: 7500, 16: 9000}
+        batchsize_config = {2: 2, 4: 2, 8: 2, 16: 3}
+        activation_config = {2: "sigmoid", 4: "sigmoid", 8: "sigmoid", 16: "sigmoid"}
+        loss_config = {2: "mse", 4: "mse", 8: "mse", 16: "mse"}
+        momentum_config = {2: 0.75, 4: 0.75, 8: 0.9, 16: 0.6}
+        stop_loss_config = {2: 0.05795, 4: 0.02025, 8: 0.02045, 16: 0.02065}
+        plot_color = {2: "red", 4: "cyan", 8: "magenta", 16: "black"}
+    elif data_ix == 2:
+        lr_config = {2: 9e-3, 4: 9e-3, 8: 1e-2, 16: 9e-3}
+        epoch_config = {2: 7500, 4: 6500, 8: 8000, 16: 30000}
+        batchsize_config = {2: 3, 4: 3, 8: 2, 16: 2}
+        activation_config = {2: "sigmoid", 4: "sigmoid", 8: "sigmoid", 16: "sigmoid"}
+        loss_config = {2: "mse", 4: "mse", 8: "mse", 16: "mse"}
+        momentum_config = {2: 0.4, 4: 0.4, 8: 0.5, 16: 0.3}
+        stop_loss_config = {2: 0.28005, 4: 0.14305, 8: 0.05975, 16: 0.05915}
+        plot_color = {2: "red", 4: "cyan", 8: "magenta", 16: "black"}
 
     trained_nets = []
     anim_files = []
@@ -132,111 +142,111 @@ def train_tla(train1_x, train1_y, input_dim, output_dim, train1_nb_examples, tra
         fig = plt.figure()
         print(f"Training two layer ANN with {nb_of_hiddenunits} units")
         for epoch in range(nb_of_epochs):
-            for i in range(train1_nb_examples//batch_size):
-                two_layer_ann.forward(train1_x[i*batch_size:i*batch_size+batch_size].reshape((batch_size, input_dim, output_dim)))
-                two_layer_ann.loss(train1_y[i*batch_size:i*batch_size+batch_size])
+            for i in range(train_nb_examples//batch_size):
+                two_layer_ann.forward(train_x[i*batch_size:i*batch_size+batch_size].reshape((batch_size, input_dim, output_dim)))
+                two_layer_ann.loss(train_y[i*batch_size:i*batch_size+batch_size])
                 two_layer_ann.backward(learning_rate)
-            tla_output = two_layer_ann.forward(train1_x.reshape((train1_nb_examples, input_dim, output_dim)))
-            tla_loss = np.mean(two_layer_ann.loss(train1_y))
-            if epoch == 0 or (epoch+1) % 500 == 0:
+            tla_output = two_layer_ann.forward(train_x.reshape((train_nb_examples, input_dim, output_dim)))
+            tla_loss = np.mean(two_layer_ann.loss(train_y))
+            if (data_ix == 1 and (epoch == 0 or (epoch+1) % 500 == 0)) or (data_ix == 2 and epoch == 0 or (epoch+1) % (1500 if nb_of_hiddenunits == 16 else 500) == 0):
                 print(f"Epoch:{epoch+1}, Two layer ANN loss:{tla_loss:.4f}")
-                plt.scatter(train1_x, train1_y)
-                tla_output = two_layer_ann.forward(train1_uniform_x_samples.reshape((train1_nb_examples, input_dim, output_dim)))
-                plt.plot(train1_uniform_x_samples, tla_output.reshape((train1_nb_examples, 1)), 
+                plt.scatter(train_x, train_y)
+                tla_output = two_layer_ann.forward(train_uniform_x_samples.reshape((train_nb_examples, input_dim, output_dim)))
+                plt.plot(train_uniform_x_samples, tla_output.reshape((train_nb_examples, 1)), 
                          color=plot_color[nb_of_hiddenunits], linewidth=3)
                 plt.title(f'Two layer ANN ({nb_of_hiddenunits} units), Epoch:{epoch+1}, Training Set, Loss:{tla_loss:.4f}')
                 plt.xlabel('x')
                 plt.ylabel('y')
-                plt.savefig(f'gif/tla_{nb_of_hiddenunits}_{epoch+1:04d}.png')
+                plt.savefig(f'gif/tla_{nb_of_hiddenunits}_{epoch+1:05d}.png')
                 plt.close()
             if tla_loss < stop_loss_config[nb_of_hiddenunits]:
                 print(f"Stopped training, Epoch:{epoch+1}, Two layer ANN loss:{tla_loss:.4f}")
-                plt.scatter(train1_x, train1_y)
-                tla_output = two_layer_ann.forward(train1_uniform_x_samples.reshape((train1_nb_examples, input_dim, output_dim)))
-                plt.plot(train1_uniform_x_samples, tla_output.reshape((train1_nb_examples, 1)), 
+                plt.scatter(train_x, train_y)
+                tla_output = two_layer_ann.forward(train_uniform_x_samples.reshape((train_nb_examples, input_dim, output_dim)))
+                plt.plot(train_uniform_x_samples, tla_output.reshape((train_nb_examples, 1)), 
                          color=plot_color[nb_of_hiddenunits], linewidth=3)
                 plt.title(f'Two layer ANN ({nb_of_hiddenunits} units), Epoch:{epoch+1}, Training Set, Loss:{tla_loss:.4f}')
                 plt.xlabel('x')
                 plt.ylabel('y')
-                plt.savefig(f'output/tla_{nb_of_hiddenunits}_train.png')
+                plt.savefig(f'output/tla_{nb_of_hiddenunits}_train{"_2" if data_ix == 2 else ""}.png')
                 plt.close()
                 break
 
-        anim_file = f'gif/tla_{nb_of_hiddenunits}_training.gif'
-        utils.create_animation(anim_file, f'gif/tla_{nb_of_hiddenunits}_*.png', fps=4)
+        anim_file = f'gif/tla_{nb_of_hiddenunits}_training{"_2" if data_ix == 2 else ""}.gif'
+        utils.create_animation(anim_file, f'gif/tla_{nb_of_hiddenunits}_*.png', fps=4 if data_ix == 1 else 8)
 
         trained_nets.append(two_layer_ann)
         anim_files.append(anim_file)
     return trained_nets, anim_files
 
 
-def evaluate_tla(trained_nets, train1_x, train1_y, test1_x, test1_y, train1_nb_examples, test1_nb_examples, train1_uniform_x_samples, input_dim, output_dim):
+def evaluate_tla(trained_nets, train_x, train_y, test_x, test_y, train_nb_examples, test_nb_examples, train_uniform_x_samples, input_dim, output_dim, label=""):
     ann_hidden_units = [2, 4, 8, 16]
     plot_color = {2: "red", 4: "cyan", 8: "magenta", 16: "black"}
     for i in range(4):
         two_layer_ann = trained_nets[i]
-        tla_output = two_layer_ann.forward(train1_x.reshape((train1_nb_examples, input_dim, output_dim)))
-        tla_loss = np.mean(two_layer_ann.loss(train1_y))
-        tla_loss_std = np.std(two_layer_ann.loss(train1_y))
+        tla_output = two_layer_ann.forward(train_x.reshape((train_nb_examples, input_dim, output_dim)))
+        tla_loss = np.mean(two_layer_ann.loss(train_y))
+        tla_loss_std = np.std(two_layer_ann.loss(train_y))
         print(f"Two layer ANN, {ann_hidden_units[i]} units, training set loss:{tla_loss:.4f}, std:{tla_loss_std:.4f}")
         
         fig = plt.figure()
         fig.set_facecolor('w')
-        plt.scatter(train1_x, train1_y)
-        tla_output = two_layer_ann.forward(train1_uniform_x_samples.reshape((train1_nb_examples, input_dim, output_dim)))
-        plt.plot(train1_uniform_x_samples, tla_output.reshape((train1_nb_examples, 1)), 
+        plt.scatter(train_x, train_y)
+        tla_output = two_layer_ann.forward(train_uniform_x_samples.reshape((train_nb_examples, input_dim, output_dim)))
+        plt.plot(train_uniform_x_samples, tla_output.reshape((train_nb_examples, 1)), 
                  color=plot_color[ann_hidden_units[i]], linewidth=3)
         plt.title(f'Two layer ANN, {ann_hidden_units[i]} units, Training Set, Loss:{np.mean(tla_loss):.4f}')
         plt.xlabel('x')
         plt.ylabel('y')
-        plt.savefig(f'output/tla_{ann_hidden_units[i]}_train_curve.png')
+        plt.savefig(f'output/tla_{ann_hidden_units[i]}_train_curve{label}.png')
         plt.show()
         
-        tla_output = two_layer_ann.forward(test1_x.reshape((test1_nb_examples, input_dim, output_dim)))
-        tla_loss = np.mean(two_layer_ann.loss(test1_y))
-        tla_loss_std = np.std(two_layer_ann.loss(test1_y))
+        tla_output = two_layer_ann.forward(test_x.reshape((test_nb_examples, input_dim, output_dim)))
+        tla_loss = np.mean(two_layer_ann.loss(test_y))
+        tla_loss_std = np.std(two_layer_ann.loss(test_y))
         print(f"Two layer ANN, {ann_hidden_units[i]} units, test set loss:{tla_loss:.4f}, std:{tla_loss_std:.4f}")
         
         fig = plt.figure()
         fig.set_facecolor('w')
-        plt.scatter(test1_x, test1_y)
-        tla_output = two_layer_ann.forward(train1_uniform_x_samples.reshape((train1_nb_examples, input_dim, output_dim)))
-        plt.plot(train1_uniform_x_samples, tla_output.reshape((train1_nb_examples, 1)), 
+        plt.scatter(test_x, test_y)
+        tla_output = two_layer_ann.forward(train_uniform_x_samples.reshape((train_nb_examples, input_dim, output_dim)))
+        plt.plot(train_uniform_x_samples, tla_output.reshape((train_nb_examples, 1)), 
                  color=plot_color[ann_hidden_units[i]], linewidth=3)
         plt.title(f'Two layer ANN, {ann_hidden_units[i]} units, Test Set, Loss:{np.mean(tla_loss):.4f}')
         plt.xlabel('x')
         plt.ylabel('y')
-        plt.savefig(f'output/tla_{ann_hidden_units[i]}_test_curve.png')
+        plt.savefig(f'output/tla_{ann_hidden_units[i]}_test_curve{label}.png')
         plt.show()
 
 
-def plot_tla_curves(trained_nets, train1_x, train1_y, train1_uniform_x_samples, train1_nb_examples, input_dim, output_dim):
+def plot_tla_curves(trained_nets, train_x, train_y, train_uniform_x_samples, train_nb_examples, input_dim, output_dim, loc="upper left", label=""):
     plot_color = {2: "red", 4: "cyan", 8: "magenta", 16: "black"}
     fig = plt.figure()
     fig.set_facecolor('w')
-    plt.scatter(train1_x, train1_y)
+    plt.scatter(train_x, train_y)
 
     two_layer_ann = trained_nets[0]
-    tla_output = two_layer_ann.forward(train1_uniform_x_samples.reshape((train1_nb_examples, input_dim, output_dim)))
-    plt.plot(train1_uniform_x_samples, tla_output.reshape((train1_nb_examples, 1)), label='2 Units', 
+    tla_output = two_layer_ann.forward(train_uniform_x_samples.reshape((train_nb_examples, input_dim, output_dim)))
+    plt.plot(train_uniform_x_samples, tla_output.reshape((train_nb_examples, 1)), label='2 Units', 
                  color=plot_color[2], linewidth=3)
 
     two_layer_ann = trained_nets[1]
-    tla_output = two_layer_ann.forward(train1_uniform_x_samples.reshape((train1_nb_examples, input_dim, output_dim)))
-    plt.plot(train1_uniform_x_samples, tla_output.reshape((train1_nb_examples, 1)), label='4 Units', 
+    tla_output = two_layer_ann.forward(train_uniform_x_samples.reshape((train_nb_examples, input_dim, output_dim)))
+    plt.plot(train_uniform_x_samples, tla_output.reshape((train_nb_examples, 1)), label='4 Units', 
                  color=plot_color[4], linewidth=6)
 
     two_layer_ann = trained_nets[2]
-    tla_output = two_layer_ann.forward(train1_uniform_x_samples.reshape((train1_nb_examples, input_dim, output_dim)))
-    plt.plot(train1_uniform_x_samples, tla_output.reshape((train1_nb_examples, 1)), label='8 Units', 
+    tla_output = two_layer_ann.forward(train_uniform_x_samples.reshape((train_nb_examples, input_dim, output_dim)))
+    plt.plot(train_uniform_x_samples, tla_output.reshape((train_nb_examples, 1)), label='8 Units', 
                  color=plot_color[8], linewidth=3)
 
     two_layer_ann = trained_nets[3]
-    tla_output = two_layer_ann.forward(train1_uniform_x_samples.reshape((train1_nb_examples, input_dim, output_dim)))
-    plt.plot(train1_uniform_x_samples, tla_output.reshape((train1_nb_examples, 1)), label='16 Units', 
+    tla_output = two_layer_ann.forward(train_uniform_x_samples.reshape((train_nb_examples, input_dim, output_dim)))
+    plt.plot(train_uniform_x_samples, tla_output.reshape((train_nb_examples, 1)), label='16 Units', 
                  color=plot_color[16], linewidth=3)
 
-    leg = plt.legend(loc='upper left')
+    leg = plt.legend(loc=loc)
 
     for legobj in leg.legendHandles:
         legobj.set_linewidth(3)
@@ -244,5 +254,5 @@ def plot_tla_curves(trained_nets, train1_x, train1_y, train1_uniform_x_samples, 
     plt.title(f'Two layer ANNs with different number of hidden units')
     plt.xlabel('x')
     plt.ylabel('y')
-    plt.savefig('output/tla_all_curves.png')
+    plt.savefig(f'output/tla_all_curves{label}.png')
     plt.show()

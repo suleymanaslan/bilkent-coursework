@@ -270,3 +270,92 @@ def complete_linkage(dataset, nb_of_clusters, dataname="data", create_anim_file=
 
 def group_average(dataset, nb_of_clusters, dataname="data", create_anim_file=False, plot_every_iter=15, color_list=None, print_output=True):
     hierarchical_clustering("group_average", dataset, nb_of_clusters, dataname, create_anim_file, plot_every_iter, color_list, print_output)
+
+
+def dbscan(dataset, min_pts, eps, dataname="data", create_anim_file=False, color_list=None):
+    start_time = time.time()
+    eps_c = eps * eps
+    
+    core_point_list = []
+    for point_index, cur_point in enumerate(dataset):
+        points_within_eps = 0
+        for other_point_index, other_point in enumerate(dataset):
+            if point_index == other_point_index:
+                continue
+            if np.square(cur_point - other_point).sum() < eps_c:
+                points_within_eps += 1
+            if points_within_eps >= min_pts:
+                core_point_list.append(point_index)
+                break
+    
+    core_points = dataset[core_point_list]
+    non_core_points = np.delete(dataset, core_point_list, axis=0)
+    
+    border_point_list = []
+    for non_core_point_index, non_core_point in enumerate(non_core_points):
+        for core_point in core_points:
+            if np.square(non_core_point - core_point).sum() < eps_c:
+                border_point_list.append(non_core_point_index)
+                break
+    
+    border_points = non_core_points[border_point_list]
+    noise_points = np.delete(non_core_points, border_point_list, axis=0)
+    
+    cur_cluster = -1
+    clusters = np.full(len(dataset), cur_cluster)
+    unique_clusters = np.unique(clusters)
+    
+    done = False
+    i = 0
+    while not done:
+        if create_anim_file and len(unique_clusters) <= 8:
+            color_arr = [color_list[cluster] for cluster in clusters]
+            plt.scatter(dataset[:,0], dataset[:,1], c=color_arr)
+            plt.title(f'{dataname}')
+            plt.xlabel('x')
+            plt.ylabel('y')
+            plt.savefig(f'gif/{dataname}_{i:04d}.png')
+            plt.close()
+        
+        occurence = np.nonzero(clusters[core_point_list] == -1)
+        if len(occurence[0]) > 0:
+            core_point_occurence = occurence[0][0]
+            cur_cluster += 1
+            clusters[core_point_list[core_point_occurence]] = cur_cluster
+            
+            core_point = dataset[core_point_list[core_point_occurence]]
+            other_core_indices = []
+            for other_point_index, other_point in enumerate(dataset):
+                if clusters[other_point_index] == -1 and np.square(core_point - other_point).sum() < eps_c:
+                    clusters[other_point_index] = clusters[core_point_list[core_point_occurence]]
+                    if other_point_index in core_point_list:
+                        other_core_indices.append(other_point_index)
+            for other_core_index in other_core_indices:
+                new_core_point = dataset[other_core_index]
+                for other_point_index, other_point in enumerate(dataset):
+                    if clusters[other_point_index] == -1 and np.square(new_core_point - other_point).sum() < eps_c:
+                        clusters[other_point_index] = clusters[other_core_index]
+                        if other_point_index in core_point_list:
+                            other_core_indices.append(other_point_index)
+        else:
+            done = True
+        i += 1
+    
+    unique_clusters = np.unique(clusters)
+    squared_errors = 0
+    for i in unique_clusters:
+        if i == -1:
+            continue
+        cluster_centroid = dataset[clusters == i].mean(axis=0)
+        squared_error = np.square(dataset[clusters == i] - cluster_centroid).sum()
+        squared_errors += squared_error
+    
+    end_time = time.time()
+    print(f"Sum of squared errors for {dataname} (normalized) with DBSCAN:{squared_errors:.4f}")
+    print(f"DBSCAN for {dataname} took :{end_time - start_time:.3f} seconds")
+    
+    if create_anim_file:
+        anim_file = f'gif/dbscan_{dataname}.gif'
+        png_files = f'gif/{dataname}_*.png'
+        
+        utils.create_animation(anim_file, png_files, fps=2, nb_of_extension_frames=3)

@@ -22,9 +22,24 @@ def read_dataset():
     return train1_x, train1_y, train2_x, train2_y, test1_x, test1_y, test2_x, test2_y
 
 
+def read_dataset2():
+    dataset1 = read_datafile('data/dataset1')
+    dataset2 = read_datafile('data/dataset2')
+    dataset3 = read_datafile('data/dataset3')
+    print(f"dataset1:{dataset1.shape}, dataset2:{dataset2.shape}, dataset3:{dataset3.shape}")
+    
+    return dataset1, dataset2, dataset3
+
+
 def normalize_data(data, training_mean, training_std):
     data = data - training_mean
     data = data / training_std
+    return data
+
+
+def normalize_data_dimensions(data):
+    for i in range(data.shape[1]):
+        data[:,i] = (data[:,i] - np.mean(data[:,i])) / np.std(data[:,i])
     return data
 
 
@@ -54,6 +69,14 @@ def normalize_dataset(train1_x, train1_y, train2_x, train2_y, test1_x, test1_y, 
     return train1_x, train1_y, train2_x, train2_y, test1_x, test1_y, test2_x, test2_y
 
 
+def normalize_dataset2(dataset1, dataset2, dataset3):
+    dataset1 = normalize_data_dimensions(dataset1)
+    dataset2 = normalize_data_dimensions(dataset2)
+    dataset3 = normalize_data_dimensions(dataset3)
+    
+    return dataset1, dataset2, dataset3
+
+
 def plot_data(x, y, title):
     fig = plt.figure()
     fig.set_facecolor('w')
@@ -64,11 +87,27 @@ def plot_data(x, y, title):
     plt.show()
 
 
+def plot_data2(data, color_list, title):
+    fig = plt.figure()
+    fig.set_facecolor('w')
+    plt.scatter(data[:,0], data[:,1], c=color_list[-1])
+    plt.title(f'{title}')
+    plt.xlabel('x')
+    plt.ylabel('y')
+    plt.show()
+
+
 def plot_dataset(train1_x, train1_y, train2_x, train2_y, test1_x, test1_y, test2_x, test2_y):
     plot_data(train1_x, train1_y, "train1")
     plot_data(train2_x, train2_y, "train2")
     plot_data(test1_x, test1_y, "test1")
     plot_data(test2_x, test2_y, "test2")
+
+
+def plot_dataset2(dataset1, dataset2, dataset3, color_list):
+    plot_data2(dataset1, color_list, "dataset1")
+    plot_data2(dataset2, color_list, "dataset2")
+    plot_data2(dataset3, color_list, "dataset3")
 
 
 def get_shape(train1_x, train2_x, test1_x, test2_x):

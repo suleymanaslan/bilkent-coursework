@@ -12,6 +12,22 @@ def read_datafile(file):
     return data
 
 
+def read_datafile3(file):
+    with open(file, 'r') as datafile:
+        contents = datafile.read()
+        data = np.array([list(filter(None, line.split(' '))) for line in contents.split('\n')], dtype=np.float64)
+    return data
+
+
+def read_costfile(file):
+    with open(file, 'r') as datafile:
+        cost_data = []
+        contents = datafile.read()
+        for i in range(len(contents.split('\n'))):
+            cost_data.append(list(filter(None, contents.split('\n')[i].split('\t')))[1])
+    return np.array(cost_data, dtype=np.float64)
+
+
 def read_dataset():
     train1_x, train1_y = read_datafile('data/train1').T
     train2_x, train2_y = read_datafile('data/train2').T
@@ -29,6 +45,20 @@ def read_dataset2():
     print(f"dataset1:{dataset1.shape}, dataset2:{dataset2.shape}, dataset3:{dataset3.shape}")
     
     return dataset1, dataset2, dataset3
+
+
+def read_dataset3():
+    data_train = read_datafile3('data/ann-train.data')
+    data_test = read_datafile3('data/ann-test.data')
+    data_cost = read_costfile('data/ann-thyroid.cost')
+    
+    data_train_x = data_train[:,:data_train.shape[1]-1]
+    data_train_y = data_train[:,data_train.shape[1]-1:].squeeze().astype(np.int32) 
+    
+    data_test_x = data_test[:,:data_test.shape[1]-1]
+    data_test_y = data_test[:,data_test.shape[1]-1:].squeeze().astype(np.int32)
+    
+    return data_train_x, data_train_y, data_test_x, data_test_y, data_cost
 
 
 def normalize_data(data, training_mean, training_std):
